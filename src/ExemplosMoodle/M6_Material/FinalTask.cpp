@@ -31,7 +31,11 @@ struct Sprite
     GLuint texID;
     vec3 position;
     vec3 dimensions; // tamanho do frame
+
+    bool isAnimated;
     float ds, dt;
+    int iAnimation, iFrame;
+	int nAnimations, nFrames;
     bool isAlive = true;
     bool isCollect = false;
 };
@@ -56,7 +60,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 
 // Protótipos das funções
 int setupShader();
-int setupSprite();
+int setupSprite(int nAnimations, int nFrames, float &ds, float &dt);
 int setupTile(int nTiles, float &ds, float &dt);
 int loadTexture(string filePath, int &width, int &height);
 void desenharMapa(GLuint shaderID);
@@ -190,16 +194,26 @@ int main()
     // GLuint texID = loadTexture("../assets/sprites/Vampires1_Walk_full.png",imgWidth,imgHeight);
     GLuint texID = loadTexture("../assets/tilesets/tilesetIso.png", imgWidth, imgHeight);
 
-    GLuint principalTexID = loadTexture("../assets/sprites/Vampirinho.png", imgWidth, imgHeight);
+    GLuint principalTexID = loadTexture("../assets/sprites/Vampires1_Walk_full.png", imgWidth, imgHeight);
     // Gerando um buffer simples, com a geometria de um triângulo
-    principal.VAO = setupSprite();
+    principal.isAnimated = true;
+    principal.nAnimations = 4;
+	principal.nFrames = 6;
+	principal.VAO = setupSprite(principal.nAnimations, principal.nFrames, principal.ds, principal.dt);
     principal.position = vec3(400.0, 150.0, 0.0);
     principal.dimensions = vec3(75, 75, 1.0);
     principal.texID = principalTexID;
+    principal.iAnimation = 1;
+	principal.iFrame = 0;
 
     GLuint cointTexID = loadTexture("../assets/sprites/coin.png", imgWidth, imgHeight);
     // Gerando um buffer simples, com a geometria de um triângulo
-    coin.VAO = setupSprite();
+    coin.isAnimated = false;
+    coin.nAnimations = 1;
+    coin.nFrames = 1;
+    coin.ds = 1.0f;
+    coin.dt = 1.0f;
+    coin.VAO = setupSprite(1, 1, coin.ds, coin.dt);
     coin.position = vec3(0.0, 0.0, 0.0);
     coin.dimensions = vec3(35, 35, 1.0);
     coin.texID = cointTexID;
@@ -277,6 +291,23 @@ int main()
         // Matriz de transformaçao do objeto - Matriz de modelo
         mat4 model = mat4(1); // matriz identidade
 
+        vec2 offsetTex;
+
+        currTime = glfwGetTime();
+		deltaT = currTime - lastTime;
+
+		if (principal.isAnimated) {
+            if (deltaT >= 1.0 / FPS)
+		    {
+		    	principal.iFrame = (principal.iFrame + 1) % principal.nFrames; // incremento "circular"
+		    	lastTime = currTime;
+		    }
+
+		    offsetTex.s = principal.iFrame * principal.ds;
+		    offsetTex.t = (principal.iAnimation) * principal.dt;
+		    glUniform2f(glGetUniformLocation(shaderID, "offsetTex"), offsetTex.s, offsetTex.t);
+        }
+
         float tile_iso_width = tileset[0].dimensions.x;
         float tile_iso_height = tileset[0].dimensions.y;
 
@@ -304,6 +335,8 @@ int main()
         //---------------------------------------------------------------------
         // Desenho da coin
         // Matriz de transformaçao do objeto - Matriz de modelo
+        
+        
         if (!coin.isCollect) {
             model = mat4(1); // matriz identidade
 
@@ -352,38 +385,78 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
         {
             possibleTileMapLine += 1;
             possibleTileMapColumn -= 1;
+            principal.iAnimation = 3;
+			if (principal.position.x >= 0)
+			{
+				principal.position.x -= 10.0f;
+			}
         }
         if (key == GLFW_KEY_D)
         {
             possibleTileMapLine -= 1;
             possibleTileMapColumn += 1;
+            principal.iAnimation = 4;
+			if (principal.position.x <= WIDTH)
+			{
+				principal.position.x += 10.0f;
+			}
         }
 
         if (key == GLFW_KEY_W)
         {
             possibleTileMapLine += 1;
             possibleTileMapColumn += 1;
+            principal.iAnimation = 2;
+			if (principal.position.y <= HEIGHT)
+			{
+				principal.position.y += 10.0f;
+			}
         }
         if (key == GLFW_KEY_S)
         {
             possibleTileMapLine -= 1;
             possibleTileMapColumn -= 1;
+            principal.iAnimation = 1;
+			if (principal.position.y >= 0)
+			{
+				principal.position.y -= 10.0f;
+			}
         }
         if (key == GLFW_KEY_E)
         {
             possibleTileMapColumn += 1;
+            principal.iAnimation = 4;
+			if (principal.position.x <= WIDTH)
+			{
+				principal.position.x += 10.0f;
+			}
         }
         if (key == GLFW_KEY_Q)
         {
             possibleTileMapLine += 1;
+            principal.iAnimation = 3;
+			if (principal.position.x >= 0)
+			{
+				principal.position.x -= 10.0f;
+			}
         }
         if (key == GLFW_KEY_C)
         {
             possibleTileMapLine -= 1;
+            principal.iAnimation = 4;
+			if (principal.position.x <= WIDTH)
+			{
+				principal.position.x += 10.0f;
+			}
         }
         if (key == GLFW_KEY_Z)
         {
             possibleTileMapColumn -= 1;
+            principal.iAnimation = 3;
+			if (principal.position.x >= 0)
+			{
+				principal.position.x -= 10.0f;
+			}
         }
 
         possibleTileMapLine = glm::clamp(possibleTileMapLine, 1, TILEMAP_HEIGHT);
@@ -476,57 +549,57 @@ int setupShader()
 // Apenas atributo coordenada nos vértices
 // 1 VBO com as coordenadas, VAO com apenas 1 ponteiro para atributo
 // A função retorna o identificador do VAO
-int setupSprite()
+
+int setupSprite(int nAnimations, int nFrames, float &ds, float &dt)
 {
-    // Aqui setamos as coordenadas x, y e z do triângulo e as armazenamos de forma
-    // sequencial, já visando mandar para o VBO (Vertex Buffer Objects)
-    // Cada atributo do vértice (coordenada, cores, coordenadas de textura, normal, etc)
-    // Pode ser arazenado em um VBO único ou em VBOs separados
-    GLfloat vertices[] = {
-        // x   y    z    s     t
-        -0.5, 0.5, 0.0, 0.0, 1.0,  // V0
-        -0.5, -0.5, 0.0, 0.0, 0.0, // V1
-        0.5, 0.5, 0.0, 1.0, 1.0,   // V2
-        0.5, -0.5, 0.0, 1.0, 0.0   // V3
-    };
 
-    GLuint VBO, VAO;
-    // Geração do identificador do VBO
-    glGenBuffers(1, &VBO);
-    // Faz a conexão (vincula) do buffer como um buffer de array
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    // Envia os dados do array de floats para o buffer da OpenGl
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	ds = 1.0 / (float)nFrames;
+	dt = 1.0 / (float)nAnimations;
+	GLfloat vertices[] = {
+		// x   y    z    s     t
+		-0.5, 0.5, 0.0, 0.0, dt,   // V0
+		-0.5, -0.5, 0.0, 0.0, 0.0, // V1
+		0.5, 0.5, 0.0, ds, dt,	   // V2
+		0.5, -0.5, 0.0, ds, 0.0	   // V3
+	};
 
-    // Geração do identificador do VAO (Vertex Array Object)
-    glGenVertexArrays(1, &VAO);
-    // Vincula (bind) o VAO primeiro, e em seguida  conecta e seta o(s) buffer(s) de vértices
-    // e os ponteiros para os atributos
-    glBindVertexArray(VAO);
-    // Para cada atributo do vertice, criamos um "AttribPointer" (ponteiro para o atributo), indicando:
-    //  Localização no shader * (a localização dos atributos devem ser correspondentes no layout especificado no vertex shader)
-    //  Numero de valores que o atributo tem (por ex, 3 coordenadas xyz)
-    //  Tipo do dado
-    //  Se está normalizado (entre zero e um)
-    //  Tamanho em bytes
-    //  Deslocamento a partir do byte zero
+	GLuint VBO, VAO;
+	// Geração do identificador do VBO
+	glGenBuffers(1, &VBO);
+	// Faz a conexão (vincula) do buffer como um buffer de array
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	// Envia os dados do array de floats para o buffer da OpenGl
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    // Ponteiro pro atributo 0 - Posição - coordenadas x, y, z
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid *)0);
-    glEnableVertexAttribArray(0);
+	// Geração do identificador do VAO (Vertex Array Object)
+	glGenVertexArrays(1, &VAO);
+	// Vincula (bind) o VAO primeiro, e em seguida  conecta e seta o(s) buffer(s) de vértices
+	// e os ponteiros para os atributos
+	glBindVertexArray(VAO);
+	// Para cada atributo do vertice, criamos um "AttribPointer" (ponteiro para o atributo), indicando:
+	//  Localização no shader * (a localização dos atributos devem ser correspondentes no layout especificado no vertex shader)
+	//  Numero de valores que o atributo tem (por ex, 3 coordenadas xyz)
+	//  Tipo do dado
+	//  Se está normalizado (entre zero e um)
+	//  Tamanho em bytes
+	//  Deslocamento a partir do byte zero
 
-    // Ponteiro pro atributo 1 - Coordenada de textura s, t
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid *)(3 * sizeof(GLfloat)));
-    glEnableVertexAttribArray(1);
+	// Ponteiro pro atributo 0 - Posição - coordenadas x, y, z
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid *)0);
+	glEnableVertexAttribArray(0);
 
-    // Observe que isso é permitido, a chamada para glVertexAttribPointer registrou o VBO como o objeto de buffer de vértice
-    // atualmente vinculado - para que depois possamos desvincular com segurança
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+	// Ponteiro pro atributo 1 - Coordenada de textura s, t
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid *)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
 
-    // Desvincula o VAO (é uma boa prática desvincular qualquer buffer ou array para evitar bugs medonhos)
-    glBindVertexArray(0);
+	// Observe que isso é permitido, a chamada para glVertexAttribPointer registrou o VBO como o objeto de buffer de vértice
+	// atualmente vinculado - para que depois possamos desvincular com segurança
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    return VAO;
+	// Desvincula o VAO (é uma boa prática desvincular qualquer buffer ou array para evitar bugs medonhos)
+	glBindVertexArray(0);
+
+	return VAO;
 }
 
 int setupTile(int nTiles, float &ds, float &dt)
