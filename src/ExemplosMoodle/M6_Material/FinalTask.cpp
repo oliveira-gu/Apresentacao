@@ -338,6 +338,9 @@ int main()
         
         
         if (!coin.isCollect) {
+
+        	glUniform2f(glGetUniformLocation(shaderID, "offsetTex"), 1, 1);
+
             model = mat4(1); // matriz identidade
 
             float x0Coin = 615;
@@ -386,20 +389,13 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
             possibleTileMapLine += 1;
             possibleTileMapColumn -= 1;
             principal.iAnimation = 3;
-			if (principal.position.x >= 0)
-			{
-				principal.position.x -= 10.0f;
-			}
         }
         if (key == GLFW_KEY_D)
         {
             possibleTileMapLine -= 1;
             possibleTileMapColumn += 1;
             principal.iAnimation = 4;
-			if (principal.position.x <= WIDTH)
-			{
-				principal.position.x += 10.0f;
-			}
+			
         }
 
         if (key == GLFW_KEY_W)
@@ -407,56 +403,38 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
             possibleTileMapLine += 1;
             possibleTileMapColumn += 1;
             principal.iAnimation = 2;
-			if (principal.position.y <= HEIGHT)
-			{
-				principal.position.y += 10.0f;
-			}
+			
         }
         if (key == GLFW_KEY_S)
         {
             possibleTileMapLine -= 1;
             possibleTileMapColumn -= 1;
             principal.iAnimation = 1;
-			if (principal.position.y >= 0)
-			{
-				principal.position.y -= 10.0f;
-			}
+			
         }
         if (key == GLFW_KEY_E)
         {
             possibleTileMapColumn += 1;
             principal.iAnimation = 4;
-			if (principal.position.x <= WIDTH)
-			{
-				principal.position.x += 10.0f;
-			}
+			
         }
         if (key == GLFW_KEY_Q)
         {
             possibleTileMapLine += 1;
             principal.iAnimation = 3;
-			if (principal.position.x >= 0)
-			{
-				principal.position.x -= 10.0f;
-			}
+			
         }
         if (key == GLFW_KEY_C)
         {
             possibleTileMapLine -= 1;
             principal.iAnimation = 4;
-			if (principal.position.x <= WIDTH)
-			{
-				principal.position.x += 10.0f;
-			}
+			
         }
         if (key == GLFW_KEY_Z)
         {
             possibleTileMapColumn -= 1;
             principal.iAnimation = 3;
-			if (principal.position.x >= 0)
-			{
-				principal.position.x -= 10.0f;
-			}
+			
         }
 
         possibleTileMapLine = glm::clamp(possibleTileMapLine, 1, TILEMAP_HEIGHT);
