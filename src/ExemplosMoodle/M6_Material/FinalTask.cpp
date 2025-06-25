@@ -451,7 +451,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
             principal.isAlive = false;
         }
 
-        if (selectedTileMapColumn == COIN_COLUMN && selectedTileMapLine == COIN_LINE)
+        if (selectedTileMapColumn == COIN_COLUMN && selectedTileMapLine == COIN_LINE && !coin.isCollect)
         {
             coin.isCollect = true;
             std::cout << "Você coletou a moeda, vá para o tile preto!" << std::endl;
