@@ -167,26 +167,6 @@ const GLchar *fragmentShaderSource = R"(
  }
  )";
 
-// #define TILEMAP_WIDTH 15
-// #define TILEMAP_HEIGHT 15
-// int map[TILEMAP_HEIGHT][TILEMAP_WIDTH] = {
-//     1, 1, 1, 1, 1, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1,
-//     1, 1, 1, 1, 1, 3, 3, 3, 1, 1, 1, 3, 3, 1, 1,
-//     1, 1, 0, 0, 1, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1,
-//     1, 1, 0, 1, 1, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1,
-//     1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3,
-//     1, 0, 1, 1, 1, 1, 4, 4, 4, 4, 4, 1, 3, 3, 3,
-//     1, 0, 1, 1, 1, 1, 4, 5, 5, 5, 4, 1, 1, 1, 3,
-//     1, 0, 1, 1, 1, 1, 4, 5, 5, 5, 4, 1, 1, 3, 3,
-//     1, 0, 1, 1, 1, 1, 4, 4, 4, 4, 4, 1, 1, 1, 1,
-//     1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1,
-//     1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1,
-//     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1,
-//     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1,
-//     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 3, 3, 3, 1,
-//     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 3, 3, 3, 1,
-// };
-
 vector<Tile> tileset;
 
 const int NOT_WALKABLE_TILES[] = {4, 5};
@@ -196,9 +176,6 @@ const int NUM_DANGEROUS_TILES = sizeof(DANGEROUS_TILES) / sizeof(DANGEROUS_TILES
 const int FINAL_TITLE = 2;
 
 const int WALKED_TILE = 6;
-
-// const int COIN_LINE = 15;
-// const int COIN_COLUMN =15;
 
 // Função MAIN
 int main()
