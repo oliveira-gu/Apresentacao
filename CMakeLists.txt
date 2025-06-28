@@ -50,6 +50,7 @@ include_directories(${glm_SOURCE_DIR})
 set(EXERCISES
     src/ExemplosMoodle/M6_Material/FinalTask
     src/ExemplosMoodle/M6_Material/FinalTaskGB
+    src/ExemplosMoodle/M6_Material/FinalFinalTaskGB
 )
 
 add_compile_options(-Wno-pragmas)
