@@ -236,7 +236,7 @@ vector<Tile> tileset;
 int main()
 {
 
-    carregarMapaTxt("../src/ExemplosMoodle/M6_Material/Mapa-final.txt");
+    carregarMapaTxt("../src/ExemplosMoodle/M6_Material/Mapa.txt");
     if (map.empty()) {
         cerr << "Mapa não carregado corretamente.\n";
         exit(1);

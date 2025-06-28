@@ -26,7 +26,7 @@ Personagem e moeda são representados por sprites, e o desafio é coletar a moed
 
 ## Estrutura do Mapa
 
-O arquivo `Map-final.txt` deve seguir o padrão:
+O arquivo `Map.txt` deve seguir o padrão:
 
 ```
 tilesetIso.png 7 75 45
@@ -153,6 +153,6 @@ coin.png 35 35
 
 ## Observações finais
 
-- Certifique-se de manter `Mapa-final.txt` na mesma pasta do executável ou ajuste o caminho no código.
+- Certifique-se de manter `Mapa.txt` na mesma pasta do executável ou ajuste o caminho no código.
 - Caso altere o mapa, mantenha o padrão do arquivo exemplo.
 - O projeto é acadêmico, uso livre para fins didáticos.
