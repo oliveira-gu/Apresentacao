@@ -28,11 +28,36 @@ using namespace glm;
 
 #include <fstream>
 
+// Protótipos das funções
+int setupShader();
+int setupSprite(int nAnimations, int nFrames, float &ds, float &dt);
+int setupTile(int nTiles, float &ds, float &dt);
+int loadTexture(string filePath, int &width, int &height);
+void desenharMapa(GLuint shaderID);
+bool isTileInArray(int tileId, const vector<int> tileVector);
+void finalizarJogo();
+void popularVectorComDigitosAgrupados(const std::string& str_de_digitos, std::vector<int>& target_vector);
+
 vector<vector<int>> map;
 int TILEMAP_WIDTH = 0, TILEMAP_HEIGHT = 0;
 int COIN_LINE = 0, COIN_COLUMN = 0;
 
 int selectedTileMapLine = 1, selectedTileMapColumn = 1;
+
+vector<int> NOT_WALKABLE_TILES;
+vector<int> DANGEROUS_TILES;
+int FINAL_TITLE = -1;
+
+int WALKED_TILE = -1;
+
+int QTD_TILE;
+int TILE_HEIGHT;
+int TILE_WIDTH;
+std::string TILESET_FILENAME; 
+
+std::string COIN_FILENAME; 
+int COIN_HEIGHT;
+int COIN_WIDTH;
 
 void carregarMapaTxt(const string& path) {
 
@@ -41,6 +66,14 @@ void carregarMapaTxt(const string& path) {
         cerr << "Erro ao abrir o arquivo do mapa: " << path << "\n";
         exit(1);  // ENCERRA imediatamente se o mapa não foi encontrado
     }
+
+    file >> TILESET_FILENAME;
+
+    file >> QTD_TILE;
+
+    file >> TILE_HEIGHT;
+
+    file >> TILE_WIDTH;
 
     file >> TILEMAP_WIDTH >> TILEMAP_HEIGHT;
     file.ignore();  // pula o '\n' após as dimensões
@@ -80,7 +113,40 @@ void carregarMapaTxt(const string& path) {
         }
     }
 
-    // Proteção final: garantir que posições importantes foram detectadas
+    file.ignore();
+    string linhaNotWalkable;
+    getline(file, linhaNotWalkable);
+    getline(file, linhaNotWalkable);
+
+    popularVectorComDigitosAgrupados(linhaNotWalkable, NOT_WALKABLE_TILES);
+
+    file.ignore();
+    string linhaDangerous;
+    getline(file, linhaDangerous);
+    getline(file, linhaDangerous);
+
+    popularVectorComDigitosAgrupados(linhaDangerous, DANGEROUS_TILES);
+
+    file.ignore();
+    string linhaFinal;
+    getline(file, linhaFinal);
+    getline(file, linhaFinal);
+
+    FINAL_TITLE = linhaFinal[0] - '0';
+
+    file.ignore();
+    string linhaWalked;
+    getline(file, linhaWalked);
+    getline(file, linhaWalked);
+
+    WALKED_TILE = linhaWalked[0] - '0';
+
+    file >> COIN_FILENAME;
+
+    file >> COIN_HEIGHT;
+
+    file >> COIN_WIDTH;
+
     if (selectedTileMapLine == 0 || selectedTileMapColumn == 0) {
         cerr << "Posição do personagem '@' não encontrada no mapa!\n";
         exit(1);
@@ -91,6 +157,12 @@ void carregarMapaTxt(const string& path) {
     }
 
     cout << "Mapa carregado com sucesso: " << TILEMAP_WIDTH << "x" << TILEMAP_HEIGHT << "\n";
+}
+
+void popularVectorComDigitosAgrupados(const std::string& str_de_digitos, std::vector<int>& target_vector) {
+    for (char c : str_de_digitos) { 
+        target_vector.push_back(c - '0');
+    }
 }
 
 struct Sprite
@@ -126,15 +198,6 @@ struct Tile
 // Protótipo da função de callback de teclado
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode);
 
-// Protótipos das funções
-int setupShader();
-int setupSprite(int nAnimations, int nFrames, float &ds, float &dt);
-int setupTile(int nTiles, float &ds, float &dt);
-int loadTexture(string filePath, int &width, int &height);
-void desenharMapa(GLuint shaderID);
-bool isTileInArray(int tileId, const int tileArray[], int arraySize);
-void finalizarJogo();
-
 // Dimensões da janela (pode ser alterado em tempo de execução)
 const GLuint WIDTH = 1200, HEIGHT = 800;
 
@@ -169,19 +232,11 @@ const GLchar *fragmentShaderSource = R"(
 
 vector<Tile> tileset;
 
-const int NOT_WALKABLE_TILES[] = {4, 5};
-const int NUM_NOT_WALKABLE_TILES = sizeof(NOT_WALKABLE_TILES) / sizeof(NOT_WALKABLE_TILES[0]);
-const int DANGEROUS_TILES[] = {3};
-const int NUM_DANGEROUS_TILES = sizeof(DANGEROUS_TILES) / sizeof(DANGEROUS_TILES[0]);
-const int FINAL_TITLE = 2;
-
-const int WALKED_TILE = 6;
-
 // Função MAIN
 int main()
 {
 
-    carregarMapaTxt("../src/ExemplosMoodle/M6_Material/Mapa.txt");
+    carregarMapaTxt("../src/ExemplosMoodle/M6_Material/Mapa-final.txt");
     if (map.empty()) {
         cerr << "Mapa não carregado corretamente.\n";
         exit(1);
@@ -243,8 +298,9 @@ int main()
 
     // Carregando uma textura
     int imgWidth, imgHeight;
-    // GLuint texID = loadTexture("../assets/sprites/Vampires1_Walk_full.png",imgWidth,imgHeight);
-    GLuint texID = loadTexture("../assets/tilesets/tilesetIso.png", imgWidth, imgHeight);
+    string tilesetPath = std::string("../assets/tilesets/") + TILESET_FILENAME;
+
+    GLuint texID = loadTexture(tilesetPath, imgWidth, imgHeight);
 
     GLuint principalTexID = loadTexture("../assets/sprites/Vampires1_Walk_full.png", imgWidth, imgHeight);
     // Gerando um buffer simples, com a geometria de um triângulo
@@ -258,7 +314,8 @@ int main()
     principal.iAnimation = 1;
 	principal.iFrame = 0;
 
-    GLuint cointTexID = loadTexture("../assets/sprites/coin.png", imgWidth, imgHeight);
+    string coinPath = std::string("../assets/sprites/") + COIN_FILENAME;
+    GLuint cointTexID = loadTexture(coinPath, imgWidth, imgHeight);
     // Gerando um buffer simples, com a geometria de um triângulo
     coin.isAnimated = false;
     coin.nAnimations = 1;
@@ -267,17 +324,17 @@ int main()
     coin.dt = 1.0f;
     coin.VAO = setupSprite(1, 1, coin.ds, coin.dt);
     coin.position = vec3(0.0, 0.0, 0.0);
-    coin.dimensions = vec3(35, 35, 1.0);
+    coin.dimensions = vec3(COIN_HEIGHT, COIN_WIDTH, 1.0);
     coin.texID = cointTexID;
 
     // Configura o tileset - conjunto de tiles do mapa
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < QTD_TILE; i++)
     {
         Tile tile;
-        tile.dimensions = vec3(75, 45, 1.0);
+        tile.dimensions = vec3(TILE_HEIGHT, TILE_WIDTH, 1.0);
         tile.iTile = i;
         tile.texID = texID;
-        tile.VAO = setupTile(7, tile.ds, tile.dt);
+        tile.VAO = setupTile(QTD_TILE, tile.ds, tile.dt);
         tileset.push_back(tile);
     }
 
@@ -492,13 +549,13 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
         possibleTileMapLine = glm::clamp(possibleTileMapLine, 1, TILEMAP_HEIGHT);
         possibleTileMapColumn = glm::clamp(possibleTileMapColumn, 1, TILEMAP_WIDTH);
 
-        if (!isTileInArray(map[possibleTileMapLine - 1][possibleTileMapColumn - 1], NOT_WALKABLE_TILES, NUM_NOT_WALKABLE_TILES))
+        if (!isTileInArray(map[possibleTileMapLine - 1][possibleTileMapColumn - 1], NOT_WALKABLE_TILES))
         {
             selectedTileMapLine = possibleTileMapLine;
             selectedTileMapColumn = possibleTileMapColumn;
         }
 
-        if (isTileInArray(map[selectedTileMapLine - 1][selectedTileMapColumn - 1], DANGEROUS_TILES, NUM_DANGEROUS_TILES))
+        if (isTileInArray(map[selectedTileMapLine - 1][selectedTileMapColumn - 1], DANGEROUS_TILES))
         {
             principal.isAlive = false;
         }
@@ -768,15 +825,16 @@ void desenharMapa(GLuint shaderID)
     }
 }
 
-bool isTileInArray(int tileId, const int tileArray[], int arraySize)
+bool isTileInArray(int tileId, const vector<int> tileVector)
 {
-    for (int i = 0; i < arraySize; ++i)
+    for (int tile : tileVector)
     {
-        if (tileArray[i] == tileId)
+        if (tile == tileId)
         {
             return true;
         }
     }
+
     return false;
 }
 
